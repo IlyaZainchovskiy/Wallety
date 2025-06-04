@@ -4,8 +4,11 @@ import 'screens/transactions.dart';
 import 'screens/statistics.dart';
 import 'screens/budgets.dart';
 import 'screens/settings.dart';
+import 'widgets/add_transaction_dialog.dart';
+import 'services/data_service.dart';
 
 void main() {
+  DataService().generateSampleData();
   runApp(const FinMateApp());
 }
 
@@ -20,10 +23,21 @@ class FinMateApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.teal, 
+          brightness: Brightness.dark,
+        ),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
       themeMode: ThemeMode.system,
       home: const HomePage(),
@@ -49,6 +63,24 @@ class _HomePageState extends State<HomePage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    DataService().addListener(_onDataChanged);
+  }
+
+  @override
+  void dispose() {
+    DataService().removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
@@ -59,20 +91,44 @@ class _HomePageState extends State<HomePage> {
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.swap_vert_circle_outlined), label: 'Transactions'),
-          NavigationDestination(icon: Icon(Icons.pie_chart_outline), label: 'Statistics'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Budgets'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Головна',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.swap_vert_circle_outlined),
+            selectedIcon: Icon(Icons.swap_vert_circle),
+            label: 'Транзакції',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.pie_chart_outline),
+            selectedIcon: Icon(Icons.pie_chart),
+            label: 'Статистика',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet),
+            label: 'Бюджети',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Налаштування',
+          ),
         ],
       ),
       floatingActionButton: _index == 1
-          ? FloatingActionButton(
-              tooltip: 'Add transaction',
+          ? FloatingActionButton.extended(
+              tooltip: 'Додати транзакцію',
               onPressed: () {
-                // TODO: open add transaction dialog
+                showDialog(
+                  context: context,
+                  builder: (context) => const AddTransactionDialog(),
+                );
               },
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add),
+              label: const Text('Додати'),
             )
           : null,
     );
