@@ -1,6 +1,6 @@
 name: finance_app
 description: A personal finance manager built with Flutter.
-publish_to: 'none' # this is a sample project
+publish_to: 'none' 
 version: 1.0.0+1
 
 environment:
@@ -8,6 +8,8 @@ environment:
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_bloc: ^8.1.2
@@ -17,10 +19,7 @@ dependencies:
   cloud_firestore: ^5.6.8
   shared_preferences: ^2.5.3
   provider: ^6.1.5
-  flutter_localization: ^0.3.2
-  flutter_localizations:
-    sdk: flutter
-    intl: ^0.19.0
+  intl: ^0.19.0
   uuid: ^4.5.1
 
 dev_dependencies:
@@ -30,13 +29,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  generate: true
 
 
-
-flutter_intl:
-  enabled: true
-  class_name: AppLocalizations
-  main_locale: uk
-  arb_dir: lib/l10n
-  output_dir: lib/l10n/generated

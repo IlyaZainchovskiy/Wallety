@@ -158,12 +158,6 @@
       "languageVersion": "2.19"
     },
     {
-      "name": "flutter_localization",
-      "rootUri": "file:///C:/Users/Ilya/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_localization-0.3.2",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "flutter_localizations",
       "rootUri": "file:///C:/flutter/packages/flutter_localizations",
       "packageUri": "lib/",
@@ -380,12 +374,6 @@
       "languageVersion": "3.5"
     },
     {
-      "name": "universal_io",
-      "rootUri": "file:///C:/Users/Ilya/AppData/Local/Pub/Cache/hosted/pub.dev/universal_io-2.2.2",
-      "packageUri": "lib/",
-      "languageVersion": "2.17"
-    },
-    {
       "name": "uuid",
       "rootUri": "file:///C:/Users/Ilya/AppData/Local/Pub/Cache/hosted/pub.dev/uuid-4.5.1",
       "packageUri": "lib/",
@@ -422,7 +410,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-06-05T16:09:39.156403Z",
+  "generated": "2025-06-05T16:50:41.362722Z",
   "generator": "pub",
   "generatorVersion": "3.6.2",
   "flutterRoot": "file:///C:/flutter",

@@ -309,11 +309,13 @@ class FirebaseDataService extends ChangeNotifier {
 
   final List<VoidCallback> _listeners = [];
 
+  @override
   void addListener(VoidCallback listener) {
     _listeners.add(listener);
     super.addListener(listener);
   }
 
+  @override
   void removeListener(VoidCallback listener) {
     _listeners.remove(listener);
     super.removeListener(listener);
