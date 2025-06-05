@@ -1,5 +1,7 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/models/transaction.dart';
 import 'package:finance_app/services/firebase_data.service.dart';
+import 'package:finance_app/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -22,25 +24,14 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   final _descriptionController = TextEditingController();
   
   late TransactionType _type;
-  String _selectedCategory = 'Їжа';
+  String _selectedCategory = '';
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
-
-  final List<String> _expenseCategories = [
-    'Їжа', 'Транспорт', 'Розваги', 'Комунальні', 'Покупки', 'Здоров\'я', 'Освіта', 'Інше'
-  ];
-  
-  final List<String> _incomeCategories = [
-    'Зарплата', 'Бонус', 'Інвестиції', 'Інше'
-  ];
 
   @override
   void initState() {
     super.initState();
     _type = widget.initialType ?? TransactionType.expense;
-    _selectedCategory = _type == TransactionType.expense
-        ? _expenseCategories.first
-        : _incomeCategories.first;
   }
 
   @override
@@ -51,8 +42,26 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
     super.dispose();
   }
 
+  List<String> _getExpenseCategories(AppLocalizations l10n) {
+    return [l10n.food, l10n.transport, l10n.entertainment, l10n.utilities, 
+            l10n.shopping, l10n.health, l10n.education, l10n.other];
+  }
+  
+  List<String> _getIncomeCategories(AppLocalizations l10n) {
+    return [l10n.salary, l10n.bonus, l10n.investment, l10n.other];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Ініціалізуємо категорію при першому рендері
+    if (_selectedCategory.isEmpty) {
+      _selectedCategory = _type == TransactionType.expense
+          ? _getExpenseCategories(l10n).first
+          : _getIncomeCategories(l10n).first;
+    }
+    
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
@@ -77,7 +86,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Додати транзакцію',
+                    l10n.addTransactionTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: Theme.of(context).colorScheme.onPrimaryContainer,
                         ),
@@ -98,19 +107,19 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Тип', style: Theme.of(context).textTheme.titleMedium),
+                      Text(l10n.type, style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       SegmentedButton<TransactionType>(
-                        segments: const [
+                        segments: [
                           ButtonSegment(
                             value: TransactionType.expense,
-                            label: Text('Витрата'),
-                            icon: Icon(Icons.remove_circle_outline),
+                            label: Text(l10n.expenseType),
+                            icon: const Icon(Icons.remove_circle_outline),
                           ),
                           ButtonSegment(
                             value: TransactionType.income,
-                            label: Text('Дохід'),
-                            icon: Icon(Icons.add_circle_outline),
+                            label: Text(l10n.incomeType),
+                            icon: const Icon(Icons.add_circle_outline),
                           ),
                         ],
                         selected: {_type},
@@ -118,8 +127,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           setState(() {
                             _type = newSelection.first;
                             _selectedCategory = _type == TransactionType.expense
-                                ? _expenseCategories.first
-                                : _incomeCategories.first;
+                                ? _getExpenseCategories(l10n).first
+                                : _getIncomeCategories(l10n).first;
                           });
                         },
                       ),
@@ -127,14 +136,14 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Назва',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.title),
+                        decoration: InputDecoration(
+                          labelText: l10n.name,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.title),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Введіть назву транзакції';
+                            return l10n.enterTransactionName;
                           }
                           return null;
                         },
@@ -143,11 +152,11 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _amountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Сума',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.attach_money),
-                          suffixText: 'грн',
+                        decoration: InputDecoration(
+                          labelText: l10n.amount,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.attach_money),
+                          suffixText: SettingsService().getCurrencySymbol(),
                         ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [
@@ -155,11 +164,11 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         ],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Введіть суму';
+                            return l10n.enterAmount;
                           }
                           final amount = double.tryParse(value);
                           if (amount == null || amount <= 0) {
-                            return 'Введіть коректну суму';
+                            return l10n.enterCorrectAmount;
                           }
                           return null;
                         },
@@ -168,14 +177,14 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       const SizedBox(height: 16),                   
                       DropdownButtonFormField<String>(
                         value: _selectedCategory,
-                        decoration: const InputDecoration(
-                          labelText: 'Категорія',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.category),
+                        decoration: InputDecoration(
+                          labelText: l10n.categoryLabel,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.category),
                         ),
                         items: (_type == TransactionType.expense
-                                ? _expenseCategories
-                                : _incomeCategories)
+                                ? _getExpenseCategories(l10n)
+                                : _getIncomeCategories(l10n))
                             .map((category) => DropdownMenuItem(
                                   value: category,
                                   child: Text(category),
@@ -204,10 +213,10 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Дата',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.calendar_today),
+                          decoration: InputDecoration(
+                            labelText: l10n.dateLabel,
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.calendar_today),
                           ),
                           child: Text(
                             '${_selectedDate.day.toString().padLeft(2, '0')}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.year}',
@@ -218,10 +227,10 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Опис (необов\'язково)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.notes),
+                        decoration: InputDecoration(
+                          labelText: l10n.descriptionOptional,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.notes),
                         ),
                         maxLines: 2,
                       ),
@@ -237,7 +246,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 children: [
                   TextButton(
                     onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-                    child: const Text('Скасувати'),
+                    child: Text(l10n.cancel),
                   ),
                   const SizedBox(width: 12),
                   FilledButton(
@@ -248,7 +257,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                             width: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Зберегти'),
+                        : Text(l10n.save),
                   ),
                 ],
               ),
@@ -260,6 +269,8 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   }
 
   Future<void> _saveTransaction() async {
+    final l10n = AppLocalizations.of(context)!;
+    
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -283,7 +294,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Транзакцію "${transaction.title}" додано'),
+            content: Text('${l10n.transactionAdded} "${transaction.title}"'),
             backgroundColor: Colors.green,
           ),
         );
@@ -292,7 +303,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Помилка збереження: $e'),
+            content: Text('${l10n.saveError}: $e'),
             backgroundColor: Colors.red,
           ),
         );

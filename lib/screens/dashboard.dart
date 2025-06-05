@@ -116,87 +116,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showBudgetNotifications(AppLocalizations l10n) {
-    final budgets = _dataService.budgets;
-    final currentMonth = DateTime.now();
-    
-    final monthlyExpenses = <String, double>{};
-    for (var transaction in _dataService.transactions) {
-      if (transaction.type == TransactionType.expense &&
-          transaction.date.year == currentMonth.year &&
-          transaction.date.month == currentMonth.month) {
-        monthlyExpenses[transaction.category] =
-            (monthlyExpenses[transaction.category] ?? 0) + transaction.amount;
-      }
+ void _showBudgetNotifications(AppLocalizations l10n) {
+  final budgets = _dataService.budgets;
+  final currentMonth = DateTime.now();
+  
+  final monthlyExpenses = <String, double>{};
+  for (var transaction in _dataService.transactions) {
+    if (transaction.type == TransactionType.expense &&
+        transaction.date.year == currentMonth.year &&
+        transaction.date.month == currentMonth.month) {
+      monthlyExpenses[transaction.category] =
+          (monthlyExpenses[transaction.category] ?? 0) + transaction.amount;
     }
+  }
 
-    final exceededBudgets = <String>[];
-    final warningBudgets = <String>[];
+  final exceededBudgets = <String>[];
+  final warningBudgets = <String>[];
 
-    for (var entry in budgets.entries) {
-      final spent = monthlyExpenses[entry.key] ?? 0;
-      final limit = entry.value;
-      final percentage = spent / limit;
+  for (var entry in budgets.entries) {
+    final spent = monthlyExpenses[entry.key] ?? 0;
+    final limit = entry.value;
+    final percentage = spent / limit;
 
-      if (percentage >= 1.0) {
-        exceededBudgets.add(entry.key);
-      } else if (percentage >= 0.8) {
-        warningBudgets.add(entry.key);
-      }
+    if (percentage >= 1.0) {
+      exceededBudgets.add(entry.key);
+    } else if (percentage >= 0.8) {
+      warningBudgets.add(entry.key);
     }
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.notifications_active, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Budget Notifications'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (exceededBudgets.isNotEmpty) ...[
-              const Text(
-                '⚠️ Exceeded budgets:',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-              ),
-              ...exceededBudgets.map((category) => Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 4),
-                    child: Text('• $category'),
-                  )),
-              const SizedBox(height: 12),
-            ],
-            if (warningBudgets.isNotEmpty) ...[
-              const Text(
-                '⚠️ Warning (>80%):',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
-              ),
-              ...warningBudgets.map((category) => Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 4),
-                    child: Text('• $category'),
-                  )),
-              const SizedBox(height: 12),
-            ],
-            if (exceededBudgets.isEmpty && warningBudgets.isEmpty)
-              const Text(
-                '✅ All budgets are within limits!',
-                style: TextStyle(color: Colors.green),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.notifications_active, color: Colors.orange),
+          const SizedBox(width: 8),
+          Text(l10n.budgetNotifications),
         ],
       ),
-    );
-  }
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (exceededBudgets.isNotEmpty) ...[
+            Text(
+              l10n.exceededBudgets,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+            ),
+            ...exceededBudgets.map((category) => Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 4),
+                  child: Text('• $category'),
+                )),
+            const SizedBox(height: 12),
+          ],
+          if (warningBudgets.isNotEmpty) ...[
+            Text(
+              l10n.warningBudgets,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+            ),
+            ...warningBudgets.map((category) => Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 4),
+                  child: Text('• $category'),
+                )),
+            const SizedBox(height: 12),
+          ],
+          if (exceededBudgets.isEmpty && warningBudgets.isEmpty)
+            Text(
+              l10n.allBudgetsWithinLimits,
+              style: const TextStyle(color: Colors.green),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.or),
+        ),
+      ],
+    ),
+  );
+}
 }
 
 class _BalanceCard extends StatelessWidget {

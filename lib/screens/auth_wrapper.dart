@@ -1,3 +1,4 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/main.dart';
 import 'package:finance_app/screens/welcome.dart';
 import 'package:finance_app/services/auth_service.dart';
@@ -26,6 +27,7 @@ class AuthWrapper extends StatelessWidget {
             future: FirebaseDataService().initializeUserData(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
+                final l10n = AppLocalizations.of(context);
                 return Scaffold(
                   body: Center(
                     child: Column(
@@ -34,7 +36,7 @@ class AuthWrapper extends StatelessWidget {
                         const CircularProgressIndicator(),
                         const SizedBox(height: 16),
                         Text(
-                          'Завантаження даних...',
+                          l10n?.loadingData ?? 'Loading data...',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ],

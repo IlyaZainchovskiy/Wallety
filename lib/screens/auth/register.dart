@@ -1,3 +1,4 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/screens/auth/login.dart';
 import 'package:finance_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -32,12 +33,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _signUp() async {
+    final l10n = AppLocalizations.of(context)!;
+    
     if (!_formKey.currentState!.validate()) return;
     
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Потрібно прийняти умови використання'),
+        SnackBar(
+          content: Text(l10n.needToAcceptTerms),
           backgroundColor: Colors.orange,
         ),
       );
@@ -74,6 +77,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -91,16 +96,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               const SizedBox(height: 20),
               
-              // Заголовок
               Text(
-                'Створити акаунт',
+                l10n.createAccount,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Почніть свій шлях до фінансової свободи',
+                l10n.startFinancialJourney,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -108,18 +112,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               const SizedBox(height: 40),
               
-              // Форма
               Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Ім'я
                     TextFormField(
                       controller: _nameController,
                       textCapitalization: TextCapitalization.words,
                       decoration: InputDecoration(
-                        labelText: 'Повне ім\'я',
-                        hintText: 'Введіть ваше ім\'я',
+                        labelText: l10n.fullName,
+                        hintText: l10n.enterYourName,
                         prefixIcon: const Icon(Icons.person_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -127,10 +129,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Введіть ваше ім\'я';
+                          return l10n.enterYourName2;
                         }
                         if (value.trim().length < 2) {
-                          return 'Ім\'я повинно містити мінімум 2 символи';
+                          return l10n.nameMinLength;
                         }
                         return null;
                       },
@@ -138,13 +140,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     
                     const SizedBox(height: 16),
                     
-                    // Email
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'Введіть ваш email',
+                        labelText: l10n.email,
+                        hintText: l10n.enterYourEmail,
                         prefixIcon: const Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -152,10 +153,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Введіть email';
+                          return l10n.enterEmail;
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Введіть коректний email';
+                          return l10n.enterCorrectEmail;
                         }
                         return null;
                       },
@@ -163,13 +164,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     
                     const SizedBox(height: 16),
                     
-                    // Пароль
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
-                        labelText: 'Пароль',
-                        hintText: 'Створіть надійний пароль',
+                        labelText: l10n.password,
+                        hintText: l10n.createReliablePassword,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -189,10 +189,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Введіть пароль';
+                          return l10n.enterPassword;
                         }
                         if (value.length < 6) {
-                          return 'Пароль повинен містити мінімум 6 символів';
+                          return l10n.passwordMinLength;
                         }
                         return null;
                       },
@@ -200,13 +200,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     
                     const SizedBox(height: 16),
                     
-                    // Підтвердження пароля
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: _obscureConfirmPassword,
                       decoration: InputDecoration(
-                        labelText: 'Підтвердіть пароль',
-                        hintText: 'Введіть пароль ще раз',
+                        labelText: l10n.confirmPassword,
+                        hintText: l10n.enterPasswordAgain,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -226,10 +225,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Підтвердіть пароль';
+                          return l10n.confirmPassword2;
                         }
                         if (value != _passwordController.text) {
-                          return 'Паролі не співпадають';
+                          return l10n.passwordsDoNotMatch;
                         }
                         return null;
                       },
@@ -237,7 +236,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     
                     const SizedBox(height: 20),
                     
-                    // Чекбокс умов використання
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -260,20 +258,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               padding: const EdgeInsets.only(top: 12),
                               child: Text.rich(
                                 TextSpan(
-                                  text: 'Я погоджуюся з ',
+                                  text: '${l10n.iAgreeWith} ',
                                   style: Theme.of(context).textTheme.bodyMedium,
                                   children: [
                                     TextSpan(
-                                      text: 'Умовами використання',
+                                      text: l10n.termsOfUse,
                                       style: TextStyle(
                                         color: Theme.of(context).colorScheme.primary,
                                         fontWeight: FontWeight.w600,
                                         decoration: TextDecoration.underline,
                                       ),
                                     ),
-                                    const TextSpan(text: ' та '),
+                                    TextSpan(text: ' ${l10n.and} '),
                                     TextSpan(
-                                      text: 'Політикою конфіденційності',
+                                      text: l10n.privacyPolicy,
                                       style: TextStyle(
                                         color: Theme.of(context).colorScheme.primary,
                                         fontWeight: FontWeight.w600,
@@ -291,7 +289,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     
                     const SizedBox(height: 24),
                     
-                    // Кнопка реєстрації
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -308,9 +305,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text(
-                                'Створити акаунт',
-                                style: TextStyle(
+                            : Text(
+                                l10n.createAccountButton,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -323,14 +320,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               const SizedBox(height: 40),
               
-              // Розділювач
               Row(
                 children: [
                   const Expanded(child: Divider()),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      'або',
+                      l10n.or,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
@@ -342,12 +338,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               const SizedBox(height: 24),
               
-              // Перехід до входу
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Вже маєте акаунт? ',
+                    l10n.alreadyHaveAccount,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   TextButton(
@@ -368,9 +363,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       );
                     },
-                    child: const Text(
-                      'Увійти',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      l10n.signIn,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

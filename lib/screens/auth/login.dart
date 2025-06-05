@@ -1,3 +1,4 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/screens/auth/register.dart';
 import 'package:finance_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -56,10 +57,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _resetPassword() async {
+    final l10n = AppLocalizations.of(context)!;
+    
     if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Введіть email для скидання пароля'),
+        SnackBar(
+          content: Text(l10n.enterEmailForReset),
           backgroundColor: Colors.orange,
         ),
       );
@@ -70,8 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.resetPassword(_emailController.text.trim());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Лист для скидання пароля надіслано на вашу пошту'),
+          SnackBar(
+            content: Text(l10n.resetEmailSent),
             backgroundColor: Colors.green,
           ),
         );
@@ -90,6 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -107,14 +112,14 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 20),             
               Text(
-                'Вітаємо знову!',
+                l10n.welcomeBack,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Увійдіть до свого акаунта',
+                l10n.signInToAccount,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -130,8 +135,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'Введіть ваш email',
+                        labelText: l10n.email,
+                        hintText: l10n.enterYourEmail,
                         prefixIcon: const Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -139,10 +144,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Введіть email';
+                          return l10n.enterEmail;
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Введіть коректний email';
+                          return l10n.enterCorrectEmail;
                         }
                         return null;
                       },
@@ -154,8 +159,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
-                        labelText: 'Пароль',
-                        hintText: 'Введіть ваш пароль',
+                        labelText: l10n.password,
+                        hintText: l10n.enterYourPassword,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -175,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Введіть пароль';
+                          return l10n.enterPassword;
                         }
                         return null;
                       },
@@ -187,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: _resetPassword,
-                        child: const Text('Забули пароль?'),
+                        child: Text(l10n.forgotPassword),
                       ),
                     ),
                     
@@ -209,9 +214,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text(
-                                'Увійти',
-                                style: TextStyle(
+                            : Text(
+                                l10n.signIn,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -230,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      'або',
+                      l10n.or,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
@@ -246,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Немає акаунта? ',
+                    l10n.noAccount,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   TextButton(
@@ -267,9 +272,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       );
                     },
-                    child: const Text(
-                      'Зареєструватися',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      l10n.signUp,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

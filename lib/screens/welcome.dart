@@ -1,3 +1,4 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/screens/auth/login.dart';
 import 'package:finance_app/screens/auth/register.dart';
 import 'package:flutter/material.dart';
@@ -60,6 +61,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -115,7 +118,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Ваш персональний фінансовий помічник',
+                        l10n.yourPersonalFinancialAssistant,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Colors.white.withValues(alpha: 0.9),
                             ),
@@ -131,24 +134,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   position: _slideAnimation,
                   child: FadeTransition(
                     opacity: _fadeAnimation,
-                    child: const Column(
+                    child: Column(
                       children: [
                         _FeatureItem(
                           icon: Icons.trending_up,
-                          title: 'Відстежуйте доходи',
-                          description: 'Контролюйте всі ваші надходження',
+                          title: l10n.trackIncome,
+                          description: l10n.controlAllIncome,
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         _FeatureItem(
                           icon: Icons.pie_chart,
-                          title: 'Аналізуйте витрати',
-                          description: 'Зрозумійте, куди йдуть ваші гроші',
+                          title: l10n.analyzeExpenses,
+                          description: l10n.understandWhereMoneyGoes,
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         _FeatureItem(
                           icon: Icons.account_balance_wallet,
-                          title: 'Плануйте бюджет',
-                          description: 'Досягайте фінансових цілей',
+                          title: l10n.planBudget,
+                          description: l10n.achieveFinancialGoals,
                         ),
                       ],
                     ),
@@ -192,9 +195,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                               ),
                               elevation: 4,
                             ),
-                            child: const Text(
-                              'Почати роботу',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.startWork,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -230,9 +233,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            child: const Text(
-                              'Увійти в акаунт',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.signInToAccount2,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
