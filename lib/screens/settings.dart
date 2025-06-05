@@ -1,4 +1,4 @@
-import 'package:finance_app/services/data_service.dart';
+// lib/screens/settings.dart
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -14,8 +14,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedLanguage = 'Ukrainian';
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
   }
 
@@ -27,13 +27,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          _buildProfileSection(),          
+          // Профіль користувача
+          _buildProfileSection(),
+          
+          // Розділювач
           const Divider(height: 32),
-          _buildAppSettingsSection(),         
-
+          
+          // Налаштування додатку
+          _buildAppSettingsSection(),
+          
+          // Розділювач
           const Divider(height: 32),
-          _buildDataSection(),
+          
+          // Розділювач
           const Divider(height: 32),
+          
+          // Про додаток
           _buildAboutSection(),
         ],
       ),
@@ -84,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Text(
                         'user@finmate.app',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                       ),
                     ],
@@ -117,6 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         
+        // Темна тема
         SwitchListTile(
           title: const Text('Темна тема'),
           subtitle: const Text('Використовувати темну тему оформлення'),
@@ -130,7 +140,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _showSnackBar('Зміна теми буде доступна в наступному оновленні');
           },
         ),
-
+        
+        // Валюта
         ListTile(
           leading: const Icon(Icons.currency_exchange),
           title: const Text('Валюта'),
@@ -138,7 +149,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => _showCurrencyDialog(),
         ),
-
+        
+        // Мова
         ListTile(
           leading: const Icon(Icons.language),
           title: const Text('Мова'),
@@ -147,73 +159,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () => _showLanguageDialog(),
         ),
         
- 
-        SwitchListTile(
-          title: const Text('Сповіщення'),
-          subtitle: const Text('Отримувати нагадування про платежі'),
-          secondary: const Icon(Icons.notifications_outlined),
-          value: true,
-          onChanged: (value) {
-            _showSnackBar('Налаштування сповіщень буде доступне незабаром');
-          },
-        ),
       ],
     );
-  }
-
-  Widget _buildDataSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Text(
-            'Дані та резервне копіювання',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-        ),
-        
-
-        ListTile(
-          leading: const Icon(Icons.file_download_outlined),
-          title: const Text('Експортувати дані'),
-          subtitle: const Text('Зберегти транзакції у CSV файл'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _exportData(),
-        ),
-        
-
-        ListTile(
-          leading: const Icon(Icons.file_upload_outlined),
-          title: const Text('Імпортувати дані'),
-          subtitle: const Text('Завантажити дані з CSV файлу'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _importData(),
-        ),
-        
-
-        ListTile(
-          leading: const Icon(Icons.delete_sweep_outlined, color: Colors.red),
-          title: const Text('Очистити всі дані'),
-          subtitle: const Text('Видалити всі транзакції та налаштування'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _showClearDataDialog(),
-        ),
-
-        ListTile(
-          leading: const Icon(Icons.data_usage_outlined),
-          title: const Text('Генерувати тестові дані'),
-          subtitle: const Text('Додати приклади транзакцій для демонстрації'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _generateSampleData(),
-        ),
-      ],
-    );
-  }
-
+  }  
   Widget _buildAboutSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,8 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
           ),
         ),
-
-        const AboutListTile(
+         const AboutListTile(
           icon: Icon(Icons.info_outline),
           applicationName: 'FinMate',
           applicationVersion: '1.0.0',
@@ -240,26 +187,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('Відстежуйте витрати, плануйте бюджет та досягайте фінансових цілей.'),
           ],
         ),
-        ListTile(
-          leading: const Icon(Icons.privacy_tip_outlined),
-          title: const Text('Політика конфіденційності'),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: () => _showSnackBar('Відкриття політики конфіденційності...'),
-        ),
-
-        ListTile(
-          leading: const Icon(Icons.description_outlined),
-          title: const Text('Умови використання'),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: () => _showSnackBar('Відкриття умов використання...'),
-        ),        
-        ListTile(
-          leading: const Icon(Icons.feedback_outlined),
-          title: const Text('Залишити відгук'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _showFeedbackDialog(),
-        ),
-        
         const SizedBox(height: 20),
       ],
     );
@@ -386,79 +313,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
-  }
-
-  void _showClearDataDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Очистити всі дані'),
-        content: const Text(
-          'Ви впевнені, що хочете видалити всі транзакції та налаштування? '
-          'Цю дію неможливо скасувати.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Скасувати'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              DataService().transactions.clear();
-              Navigator.of(context).pop();
-              _showSnackBar('Всі дані видалено');
-            },
-            child: const Text('Видалити все'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFeedbackDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Залишити відгук'),
-        content: const TextField(
-          decoration: InputDecoration(
-            labelText: 'Ваш відгук',
-            border: OutlineInputBorder(),
-            hintText: 'Поділіться своїми враженнями про додаток...',
-          ),
-          maxLines: 4,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Скасувати'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _showSnackBar('Дякуємо за ваш відгук!');
-            },
-            child: const Text('Надіслати'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _exportData() {
-    // TODO: Реалізувати експорт у CSV
-    _showSnackBar('Експорт даних у CSV файл...');
-  }
-
-  void _importData() {
-    // TODO: Реалізувати імпорт з CSV
-    _showSnackBar('Функція імпорту буде доступна незабаром');
-  }
-
-  void _generateSampleData() {
-    DataService().generateSampleData();
-    _showSnackBar('Тестові дані згенеровано');
   }
 
   String _getCurrencyName(String code) {
