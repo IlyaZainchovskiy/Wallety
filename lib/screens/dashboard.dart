@@ -1,6 +1,8 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/models/transaction.dart';
 import 'package:finance_app/services/firebase_data.service.dart';
 import 'package:finance_app/services/navigation_service.dart';
+import 'package:finance_app/services/settings_service.dart';
 import 'package:finance_app/widgets/add_transaction_dialog.dart';
 import 'package:flutter/material.dart';
 
@@ -14,6 +16,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final FirebaseDataService _dataService = FirebaseDataService();
   final NavigationService _navigationService = NavigationService();
+  final SettingsService _settingsService = SettingsService();
 
   @override
   void initState() {
@@ -39,69 +42,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final balance = _dataService.balance;
     final currentMonth = DateTime.now();
     final monthlyExpenses = _dataService.getMonthlyExpenses(currentMonth);
     final monthlyIncome = _dataService.getMonthlyIncome(currentMonth);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('FinMate'),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              _showBudgetNotifications();
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await _dataService.initializeUserData();
-          },
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _BalanceCard(total: balance),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MonthlyCard(
-                      title: 'Доходи цього місяця',
-                      amount: monthlyIncome,
-                      icon: Icons.trending_up,
-                      color: Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _MonthlyCard(
-                      title: 'Витрати цього місяця',
-                      amount: monthlyExpenses,
-                      icon: Icons.trending_down,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
+    return ListenableBuilder(
+      listenable: _settingsService,
+      builder: (context, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('FinMate'),
+            centerTitle: false,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {
+                  _showBudgetNotifications(l10n);
+                },
               ),
-              const SizedBox(height: 16),
-
-              _RecentTransactionsCard(),
-              const SizedBox(height: 16),
-
-              _QuickActionsCard(),
             ],
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _dataService.initializeUserData();
+              },
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _BalanceCard(
+                    total: balance,
+                    l10n: l10n,
+                    settingsService: _settingsService,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MonthlyCard(
+                          title: l10n.monthlyIncome,
+                          amount: monthlyIncome,
+                          icon: Icons.trending_up,
+                          color: Colors.green,
+                          settingsService: _settingsService,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _MonthlyCard(
+                          title: l10n.monthlyExpenses,
+                          amount: monthlyExpenses,
+                          icon: Icons.trending_down,
+                          color: Colors.red,
+                          settingsService: _settingsService,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _RecentTransactionsCard(l10n: l10n, settingsService: _settingsService),
+                  const SizedBox(height: 16),
+
+                  _QuickActionsCard(l10n: l10n),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  void _showBudgetNotifications() {
+  void _showBudgetNotifications(AppLocalizations l10n) {
     final budgets = _dataService.budgets;
     final currentMonth = DateTime.now();
     
@@ -137,7 +152,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Icon(Icons.notifications_active, color: Colors.orange),
             SizedBox(width: 8),
-            Text('Сповіщення бюджету'),
+            Text('Budget Notifications'),
           ],
         ),
         content: Column(
@@ -146,7 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             if (exceededBudgets.isNotEmpty) ...[
               const Text(
-                '⚠️ Перевищені бюджети:',
+                '⚠️ Exceeded budgets:',
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
               ),
               ...exceededBudgets.map((category) => Padding(
@@ -157,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
             if (warningBudgets.isNotEmpty) ...[
               const Text(
-                '⚠️ Попередження (>80%):',
+                '⚠️ Warning (>80%):',
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
               ),
               ...warningBudgets.map((category) => Padding(
@@ -168,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
             if (exceededBudgets.isEmpty && warningBudgets.isEmpty)
               const Text(
-                '✅ Всі бюджети в межах норми!',
+                '✅ All budgets are within limits!',
                 style: TextStyle(color: Colors.green),
               ),
           ],
@@ -186,7 +201,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 class _BalanceCard extends StatelessWidget {
   final double total;
-  const _BalanceCard({Key? key, required this.total}) : super(key: key);
+  final AppLocalizations l10n;
+  final SettingsService settingsService;
+
+  const _BalanceCard({
+    Key? key,
+    required this.total,
+    required this.l10n,
+    required this.settingsService,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -224,14 +247,14 @@ class _BalanceCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Загальний баланс',
+                l10n.totalBalance,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                '${total.toStringAsFixed(2)} грн',
+                settingsService.formatAmount(total),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
@@ -250,6 +273,7 @@ class _MonthlyCard extends StatelessWidget {
   final double amount;
   final IconData icon;
   final Color color;
+  final SettingsService settingsService;
 
   const _MonthlyCard({
     Key? key,
@@ -257,6 +281,7 @@ class _MonthlyCard extends StatelessWidget {
     required this.amount,
     required this.icon,
     required this.color,
+    required this.settingsService,
   }) : super(key: key);
 
   @override
@@ -282,7 +307,7 @@ class _MonthlyCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${amount.toStringAsFixed(0)} грн',
+              settingsService.formatAmountShort(amount),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -296,7 +321,14 @@ class _MonthlyCard extends StatelessWidget {
 }
 
 class _RecentTransactionsCard extends StatelessWidget {
-  const _RecentTransactionsCard({Key? key}) : super(key: key);
+  final AppLocalizations l10n;
+  final SettingsService settingsService;
+
+  const _RecentTransactionsCard({
+    Key? key,
+    required this.l10n,
+    required this.settingsService,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +346,7 @@ class _RecentTransactionsCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Останні транзакції',
+                  l10n.recentTransactions,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -322,16 +354,16 @@ class _RecentTransactionsCard extends StatelessWidget {
                 const Spacer(),
                 TextButton(
                   onPressed: () => NavigationService().navigateToTab(1),
-                  child: const Text('Показати всі'),
+                  child: Text(l10n.showAll),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             if (transactions.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text('Поки що немає транзакцій'),
+                  padding: const EdgeInsets.all(20),
+                  child: Text(l10n.noTransactions),
                 ),
               )
             else
@@ -378,7 +410,7 @@ class _RecentTransactionsCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${transaction.type == TransactionType.income ? '+' : '-'}${transaction.amount.toStringAsFixed(0)} грн',
+                          '${transaction.type == TransactionType.income ? '+' : '-'}${settingsService.formatAmountShort(transaction.amount)}',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: transaction.type == TransactionType.income
@@ -397,7 +429,12 @@ class _RecentTransactionsCard extends StatelessWidget {
 }
 
 class _QuickActionsCard extends StatelessWidget {
-  const _QuickActionsCard({Key? key}) : super(key: key);
+  final AppLocalizations l10n;
+
+  const _QuickActionsCard({
+    Key? key,
+    required this.l10n,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -408,7 +445,7 @@ class _QuickActionsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Швидкі дії',
+              l10n.quickActions,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -419,7 +456,7 @@ class _QuickActionsCard extends StatelessWidget {
                 Expanded(
                   child: _QuickActionButton(
                     icon: Icons.add_circle_outline,
-                    label: 'Додати дохід',
+                    label: l10n.addIncome,
                     color: Colors.green,
                     onTap: () {
                       showDialog(
@@ -435,7 +472,7 @@ class _QuickActionsCard extends StatelessWidget {
                 Expanded(
                   child: _QuickActionButton(
                     icon: Icons.remove_circle_outline,
-                    label: 'Додати витрату',
+                    label: l10n.addExpense,
                     color: Colors.red,
                     onTap: () {
                       showDialog(
@@ -455,7 +492,7 @@ class _QuickActionsCard extends StatelessWidget {
                 Expanded(
                   child: _QuickActionButton(
                     icon: Icons.pie_chart_outline,
-                    label: 'Статистика',
+                    label: l10n.statistics,
                     color: Colors.blue,
                     onTap: () => NavigationService().navigateToTab(2),
                   ),
@@ -464,7 +501,7 @@ class _QuickActionsCard extends StatelessWidget {
                 Expanded(
                   child: _QuickActionButton(
                     icon: Icons.account_balance_wallet_outlined,
-                    label: 'Бюджети',
+                    label: l10n.budgets,
                     color: Colors.orange,
                     onTap: () => NavigationService().navigateToTab(3),
                   ),

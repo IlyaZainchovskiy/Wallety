@@ -1,8 +1,11 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/screens/auth_wrapper.dart';
 import 'package:finance_app/screens/auth/login.dart';
 import 'package:finance_app/screens/auth/register.dart';
 import 'package:finance_app/services/firebase_data.service.dart';
 import 'package:finance_app/services/navigation_service.dart';
+import 'package:finance_app/services/settings_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -20,6 +23,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  await SettingsService().loadSettings();
+  
   runApp(const FinMateApp());
 }
 
@@ -28,35 +33,102 @@ class FinMateApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'FinMate',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal, 
-          brightness: Brightness.dark,
-        ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-      themeMode: ThemeMode.system,
-      home: const AuthWrapper(),
-      routes: {
-        '/home': (context) => const HomePage(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
+    return ListenableBuilder(
+      listenable: SettingsService(),
+      builder: (context, child) {
+        final settingsService = SettingsService();
+        
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'FinMate',
+          
+          locale: settingsService.locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('uk'),
+            Locale('en'),
+          ],
+          theme: _buildLightTheme(),
+          darkTheme: _buildDarkTheme(),
+          themeMode: settingsService.themeMode,
+          
+          home: const AuthWrapper(),
+          routes: {
+            '/home': (context) => const HomePage(),
+            '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(),
+          },
+        );
       },
+    );
+  }
+
+  ThemeData _buildLightTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.teal,
+        brightness: Brightness.light,
+      ),
+      cardTheme: CardTheme(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        height: 80,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(size: 24);
+          }
+          return const IconThemeData(size: 22);
+        }),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 4,
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.teal,
+        brightness: Brightness.dark,
+      ),
+      cardTheme: CardTheme(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        height: 80,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(size: 24);
+          }
+          return const IconThemeData(size: 22);
+        }),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 6,
+      ),
     );
   }
 }
@@ -108,6 +180,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
       body: IndexedStack(
         index: _index,
@@ -116,37 +190,37 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Головна',
+            icon: const Icon(Icons.dashboard_outlined),
+            selectedIcon: const Icon(Icons.dashboard),
+            label: l10n.dashboard,
           ),
           NavigationDestination(
-            icon: Icon(Icons.swap_vert_circle_outlined),
-            selectedIcon: Icon(Icons.swap_vert_circle),
-            label: 'Транзакції',
+            icon: const Icon(Icons.swap_vert_circle_outlined),
+            selectedIcon: const Icon(Icons.swap_vert_circle),
+            label: l10n.transactions,
           ),
           NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart),
-            label: 'Статистика',
+            icon: const Icon(Icons.pie_chart_outline),
+            selectedIcon: const Icon(Icons.pie_chart),
+            label: l10n.statistics,
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
-            label: 'Бюджети',
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: const Icon(Icons.account_balance_wallet),
+            label: l10n.budgets,
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Налаштування',
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: l10n.settings,
           ),
         ],
       ),
       floatingActionButton: _index == 1
           ? FloatingActionButton.extended(
-              tooltip: 'Додати транзакцію',
+              tooltip: l10n.addTransaction,
               onPressed: () {
                 showDialog(
                   context: context,
@@ -154,7 +228,7 @@ class _HomePageState extends State<HomePage> {
                 );
               },
               icon: const Icon(Icons.add),
-              label: const Text('Додати'),
+              label: Text(l10n.add),
             )
           : null,
     );

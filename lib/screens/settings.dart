@@ -1,6 +1,7 @@
+import 'package:finance_app/l10n/app_localizations.dart';
 import 'package:finance_app/services/firebase_data.service.dart';
+import 'package:finance_app/services/settings_service.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -13,72 +14,54 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   final FirebaseDataService _dataService = FirebaseDataService();
-  
-  bool _isDarkTheme = false;
-  String _selectedCurrency = 'UAH';
-  String _selectedLanguage = 'Ukrainian';
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _isDarkTheme = Theme.of(context).brightness == Brightness.dark;
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _selectedCurrency = prefs.getString('currency') ?? 'UAH';
-      _selectedLanguage = prefs.getString('language') ?? 'Ukrainian';
-    });
-  }
-
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('currency', _selectedCurrency);
-    await prefs.setString('language', _selectedLanguage);
-  }
+  final SettingsService _settingsService = SettingsService();
 
   @override
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
+    final l10n = AppLocalizations.of(context)!;
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Налаштування'),
+        title: Text(l10n.settings),
       ),
-      body: ListView(
-        children: [
-          _buildProfileSection(user),
-          
-          const Divider(height: 32),
-          
-          _buildAppSettingsSection(),
-          
-          const Divider(height: 32),
-          
-          _buildDataSection(),
-          
-          const Divider(height: 32),
-          
-          _buildSecuritySection(),
-          
-          const Divider(height: 32),
-          
-          _buildAboutSection(),
-        ],
+      body: ListenableBuilder(
+        listenable: _settingsService,
+        builder: (context, child) {
+          return ListView(
+            children: [
+              _buildProfileSection(user, l10n),
+              
+              const Divider(height: 32),
+              
+              _buildAppSettingsSection(l10n),
+              
+              const Divider(height: 32),
+              
+              _buildDataSection(l10n),
+              
+              const Divider(height: 32),
+              
+              _buildSecuritySection(l10n),
+              
+              const Divider(height: 32),
+              
+              _buildAboutSection(l10n),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProfileSection(user) {
+  Widget _buildProfileSection(user, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'Профіль',
+            l10n.profile,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -111,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user?.displayName ?? 'Користувач FinMate',
+                        user?.displayName ?? 'FinMate User',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -127,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => _showEditProfileDialog(),
+                  onPressed: () => _showEditProfileDialog(l10n),
                   icon: const Icon(Icons.edit_outlined),
                 ),
               ],
@@ -138,14 +121,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildAppSettingsSection() {
+  Widget _buildAppSettingsSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
-            'Налаштування додатку',
+            l10n.appSettings,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -153,46 +136,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         
-        SwitchListTile(
-          title: const Text('Темна тема'),
-          subtitle: const Text('Використовувати темну тему оформлення'),
-          secondary: const Icon(Icons.dark_mode_outlined),
-          value: _isDarkTheme,
-          onChanged: (value) {
-            setState(() {
-              _isDarkTheme = value;
-            });
-            _showSnackBar('Зміна теми буде доступна в наступному оновленні');
-          },
+        ListTile(
+          leading: const Icon(Icons.palette_outlined),
+          title: Text(l10n.darkTheme),
+          subtitle: Text(_getThemeName(l10n)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _showThemeDialog(l10n),
         ),
         
         ListTile(
           leading: const Icon(Icons.currency_exchange),
-          title: const Text('Валюта'),
-          subtitle: Text(_getCurrencyName(_selectedCurrency)),
+          title: Text(l10n.currency),
+          subtitle: Text(_settingsService.getCurrencyName()),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _showCurrencyDialog(),
+          onTap: () => _showCurrencyDialog(l10n),
         ),
         
         ListTile(
           leading: const Icon(Icons.language),
-          title: const Text('Мова'),
-          subtitle: Text(_selectedLanguage),
+          title: Text(l10n.language),
+          subtitle: Text(_getLanguageName(l10n)),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _showLanguageDialog(),
+          onTap: () => _showLanguageDialog(l10n),
         ),
       ],
     );
   }
 
-  Widget _buildDataSection() {
+  Widget _buildDataSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
-            'Дані та резервне копіювання',
+            'Data & Backup',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -202,26 +180,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         
         const ListTile(
           leading: Icon(Icons.cloud_upload_outlined),
-          title: Text('Синхронізація з хмарою'),
-          subtitle: Text('Дані автоматично синхронізуються'),
+          title: Text('Cloud Sync'),
+          subtitle: Text('Data automatically synced'),
           trailing: Icon(
             Icons.check_circle,
             color: Colors.green,
           ),
         ),
-      
       ],
     );
   }
 
-  Widget _buildSecuritySection() {
+  Widget _buildSecuritySection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
-            'Безпека',
+            l10n.security,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -231,39 +208,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
         
         ListTile(
           leading: const Icon(Icons.lock_outline),
-          title: const Text('Змінити пароль'),
-          subtitle: const Text('Оновити пароль акаунта'),
+          title: Text(l10n.changePassword),
+          subtitle: const Text('Update your account password'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _changePassword(),
+          onTap: () => _changePassword(l10n),
         ),
         
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.red),
-          title: const Text('Вийти з акаунта'),
-          subtitle: const Text('Завершити сеанс роботи'),
+          title: Text(l10n.signOut),
+          subtitle: const Text('End current session'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _signOut(),
+          onTap: () => _signOut(l10n),
         ),
         
         ListTile(
           leading: const Icon(Icons.delete_forever, color: Colors.red),
-          title: const Text('Видалити акаунт'),
-          subtitle: const Text('Остаточно видалити акаунт та всі дані'),
+          title: Text(l10n.deleteAccount),
+          subtitle: Text('Permanently delete account and all data'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _deleteAccount(),
+          onTap: () => _deleteAccount(l10n),
         ),
       ],
     );
   }
 
-  Widget _buildAboutSection() {
+  Widget _buildAboutSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
-            'Про додаток',
+            'About',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -274,11 +251,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: Icon(Icons.info_outline),
           applicationName: 'FinMate',
           applicationVersion: '1.0.0',
-          applicationLegalese: '© 2025 FinMate. Всі права захищені.',
+          applicationLegalese: '© 2025 FinMate. All rights reserved.',
           aboutBoxChildren: [
-            Text('FinMate - ваш персональний помічник для управління фінансами.'),
+            Text('FinMate - your personal finance management assistant.'),
             SizedBox(height: 8),
-            Text('Відстежуйте витрати, плануйте бюджет та досягайте фінансових цілей.'),
+            Text('Track expenses, plan budgets and achieve financial goals.'),
           ],
         ),
         const SizedBox(height: 20),
@@ -286,21 +263,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _showEditProfileDialog() async {
+  String _getThemeName(AppLocalizations l10n) {
+    switch (_settingsService.themeMode) {
+      case ThemeMode.light:
+        return l10n.lightTheme;
+      case ThemeMode.dark:
+        return l10n.darkThemeOption;
+      case ThemeMode.system:
+        return l10n.systemTheme;
+    }
+  }
+
+  String _getLanguageName(AppLocalizations l10n) {
+    switch (_settingsService.locale.languageCode) {
+      case 'uk':
+        return l10n.ukrainian;
+      case 'en':
+        return l10n.english;
+      default:
+        return l10n.ukrainian;
+    }
+  }
+
+  Future<void> _showEditProfileDialog(AppLocalizations l10n) async {
     final nameController = TextEditingController(text: _authService.currentUser?.displayName);
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Редагувати профіль'),
+        title: const Text('Edit Profile'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Ім\'я',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.fullName,
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
@@ -308,67 +307,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Скасувати'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
               try {
                 await _authService.updateProfile(name: nameController.text);
                 Navigator.of(context).pop();
-                _showSnackBar('Профіль оновлено');
+                _showSnackBar('Profile updated');
                 setState(() {});
               } catch (e) {
-                _showSnackBar('Помилка оновлення профілю: $e');
+                _showSnackBar('Error updating profile: $e');
               }
             },
-            child: const Text('Зберегти'),
+            child: Text(l10n.save),
           ),
         ],
       ),
     );
   }
 
-  void _showCurrencyDialog() {
+  void _showThemeDialog(AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Оберіть валюту'),
+        title: const Text('Select Theme'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<ThemeMode>(
+              title: Text(l10n.systemTheme),
+              value: ThemeMode.system,
+              groupValue: _settingsService.themeMode,
+              onChanged: (value) async {
+                await _settingsService.setThemeMode(value!);
+                Navigator.of(context).pop();
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: Text(l10n.lightTheme),
+              value: ThemeMode.light,
+              groupValue: _settingsService.themeMode,
+              onChanged: (value) async {
+                await _settingsService.setThemeMode(value!);
+                Navigator.of(context).pop();
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: Text(l10n.darkThemeOption),
+              value: ThemeMode.dark,
+              groupValue: _settingsService.themeMode,
+              onChanged: (value) async {
+                await _settingsService.setThemeMode(value!);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCurrencyDialog(AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Currency'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             RadioListTile<String>(
-              title: const Text('Українська гривня (₴)'),
+              title: Text(l10n.ukrainianHryvnia),
               value: 'UAH',
-              groupValue: _selectedCurrency,
-              onChanged: (value) {
-                setState(() {
-                  _selectedCurrency = value!;
-                });
-                _saveSettings();
+              groupValue: _settingsService.currency,
+              onChanged: (value) async {
+                await _settingsService.setCurrency(value!);
                 Navigator.of(context).pop();
               },
             ),
             RadioListTile<String>(
-              title: const Text('Долар США (\$)'),
+              title: Text(l10n.usDollar),
               value: 'USD',
-              groupValue: _selectedCurrency,
-              onChanged: (value) {
-                setState(() {
-                  _selectedCurrency = value!;
-                });
-                _saveSettings();
+              groupValue: _settingsService.currency,
+              onChanged: (value) async {
+                await _settingsService.setCurrency(value!);
                 Navigator.of(context).pop();
               },
             ),
             RadioListTile<String>(
-              title: const Text('Євро (€)'),
+              title: Text(l10n.euro),
               value: 'EUR',
-              groupValue: _selectedCurrency,
-              onChanged: (value) {
-                setState(() {
-                  _selectedCurrency = value!;
-                });
-                _saveSettings();
+              groupValue: _settingsService.currency,
+              onChanged: (value) async {
+                await _settingsService.setCurrency(value!);
                 Navigator.of(context).pop();
               },
             ),
@@ -378,35 +409,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showLanguageDialog() {
+  void _showLanguageDialog(AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Оберіть мову'),
+        title: const Text('Select Language'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             RadioListTile<String>(
-              title: const Text('Українська'),
-              value: 'Ukrainian',
-              groupValue: _selectedLanguage,
-              onChanged: (value) {
-                setState(() {
-                  _selectedLanguage = value!;
-                });
-                _saveSettings();
+              title: Text(l10n.ukrainian),
+              value: 'uk',
+              groupValue: _settingsService.locale.languageCode,
+              onChanged: (value) async {
+                await _settingsService.setLocale(Locale(value!));
                 Navigator.of(context).pop();
               },
             ),
             RadioListTile<String>(
-              title: const Text('English'),
-              value: 'English',
-              groupValue: _selectedLanguage,
-              onChanged: (value) {
-                setState(() {
-                  _selectedLanguage = value!;
-                });
-                _saveSettings();
+              title: Text(l10n.english),
+              value: 'en',
+              groupValue: _settingsService.locale.languageCode,
+              onChanged: (value) async {
+                await _settingsService.setLocale(Locale(value!));
                 Navigator.of(context).pop();
               },
             ),
@@ -416,60 +441,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _changePassword() async {
+  Future<void> _changePassword(AppLocalizations l10n) async {
     final emailController = TextEditingController(text: _authService.currentUser?.email);
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Змінити пароль'),
+        title: Text(l10n.changePassword),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.email,
+                border: const OutlineInputBorder(),
               ),
               readOnly: true,
             ),
             const SizedBox(height: 16),
-            const Text('Лист для скидання пароля буде надіслано на вашу пошту.'),
+            const Text('A password reset email will be sent to your email.'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Скасувати'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
               try {
                 await _authService.resetPassword(emailController.text);
                 Navigator.of(context).pop();
-                _showSnackBar('Лист для скидання пароля надіслано');
+                _showSnackBar('Password reset email sent');
               } catch (e) {
-                _showSnackBar('Помилка: $e');
+                _showSnackBar('Error: $e');
               }
             },
-            child: const Text('Надіслати'),
+            child: const Text('Send'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _signOut() async {
+  Future<void> _signOut(AppLocalizations l10n) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Вийти з акаунта'),
-        content: const Text('Ви впевнені, що хочете вийти з акаунта?'),
+        title: Text(l10n.signOut),
+        content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Скасувати'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -479,36 +504,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _dataService.clearData();
                 await _authService.signOut();
               } catch (e) {
-                _showSnackBar('Помилка виходу: $e');
+                _showSnackBar('Sign out error: $e');
               }
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Вийти'),
+            child: Text(l10n.signOut),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _deleteAccount() async {
+  Future<void> _deleteAccount(AppLocalizations l10n) async {
     final passwordController = TextEditingController();
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Видалити акаунт'),
+        title: Text(l10n.deleteAccount),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'УВАГА! Це остаточно видалить ваш акаунт та всі дані. Цю дію неможливо скасувати.',
+              'WARNING! This will permanently delete your account and all data. This action cannot be undone.',
               style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: passwordController,
               decoration: const InputDecoration(
-                labelText: 'Підтвердіть паролем',
+                labelText: 'Confirm with password',
                 border: OutlineInputBorder(),
               ),
               obscureText: true,
@@ -518,7 +543,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Скасувати'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -527,30 +552,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               try {
                 await _authService.reauthenticate(passwordController.text);
                 await _authService.deleteAccount();
-                _showSnackBar('Акаунт видалено');
+                _showSnackBar('Account deleted');
               } catch (e) {
-                _showSnackBar('Помилка видалення: $e');
+                _showSnackBar('Deletion error: $e');
               }
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Видалити назавжди'),
+            child: const Text('Delete Forever'),
           ),
         ],
       ),
     );
-  }
-
-  String _getCurrencyName(String code) {
-    switch (code) {
-      case 'UAH':
-        return 'Українська гривня (₴)';
-      case 'USD':
-        return 'Долар США (\$)';
-      case 'EUR':
-        return 'Євро (€)';
-      default:
-        return code;
-    }
   }
 
   void _showSnackBar(String message) {
