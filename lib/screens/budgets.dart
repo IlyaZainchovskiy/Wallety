@@ -1,5 +1,8 @@
+import 'package:finance_app/l10n/app_localizations.dart';
+import 'package:finance_app/models/category.dart';
 import 'package:finance_app/models/transaction.dart';
 import 'package:finance_app/services/firebase_data.service.dart';
+import 'package:finance_app/services/settings_service.dart';
 import 'package:flutter/material.dart';
 
 class BudgetsScreen extends StatefulWidget {
@@ -11,6 +14,7 @@ class BudgetsScreen extends StatefulWidget {
 
 class _BudgetsScreenState extends State<BudgetsScreen> {
   final FirebaseDataService _dataService = FirebaseDataService();
+  final SettingsService _settingsService = SettingsService();
 
   @override
   void initState() {
@@ -47,20 +51,30 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final budgets = _dataService.budgets;
     final currentExpenses = _getCurrentMonthExpenses();
     final now = DateTime.now();
-    final monthName = _getMonthName(now.month);
+    final monthName = l10n.getMonthName(now.month);
 
     if (_dataService.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(l10n.loadingData),
+            ],
+          ),
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Бюджети'),
+        title: Text(l10n.budgets),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -88,14 +102,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Бюджет на $monthName ${now.year}',
+                          '${l10n.budgetFor} $monthName ${now.year}',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Відстежуйте свої витрати по категоріях',
+                          l10n.trackExpensesByCategory,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
@@ -110,7 +124,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             const SizedBox(height: 16),
             
             if (budgets.isNotEmpty) ...[
-              _buildOverallStats(currentExpenses, budgets),
+              _buildOverallStats(currentExpenses, budgets, l10n),
               const SizedBox(height: 16),
               ...budgets.entries.map((entry) {
                 final category = entry.key;
@@ -125,6 +139,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     spent: spent,
                     limit: budgetLimit,
                     progress: progress,
+                    l10n: l10n,
+                    settingsService: _settingsService,
                     onEdit: () => _showEditBudgetDialog(category, budgetLimit),
                     onDelete: () => _deleteBudget(category),
                   ),
@@ -153,7 +169,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Додати новий бюджет',
+                        l10n.addNewBudget,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w600,
@@ -170,7 +186,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
   }
 
-  Widget _buildOverallStats(Map<String, double> currentExpenses, Map<String, double> budgets) {
+  Widget _buildOverallStats(Map<String, double> currentExpenses, Map<String, double> budgets, AppLocalizations l10n) {
     final totalBudget = budgets.values.fold(0.0, (sum, amount) => sum + amount);
     final totalSpent = currentExpenses.values.fold(0.0, (sum, amount) => sum + amount);
     final remaining = totalBudget - totalSpent;
@@ -183,7 +199,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Загальний огляд',
+              l10n.overallView,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -194,23 +210,26 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               children: [
                 Expanded(
                   child: _StatItem(
-                    title: 'Загальний бюджет',
+                    title: l10n.totalBudget,
                     amount: totalBudget,
                     color: Colors.blue,
+                    settingsService: _settingsService,
                   ),
                 ),
                 Expanded(
                   child: _StatItem(
-                    title: 'Витрачено',
+                    title: l10n.budgetUsed,
                     amount: totalSpent,
                     color: Colors.orange,
+                    settingsService: _settingsService,
                   ),
                 ),
                 Expanded(
                   child: _StatItem(
-                    title: 'Залишилось',
+                    title: l10n.remaining,
                     amount: remaining,
                     color: remaining >= 0 ? Colors.green : Colors.red,
+                    settingsService: _settingsService,
                   ),
                 ),
               ],
@@ -231,7 +250,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             const SizedBox(height: 8),
             
             Text(
-              'Використано ${(overallProgress * 100).toStringAsFixed(1)}% бюджету',
+              '${l10n.budgetUsed} ${(overallProgress * 100).toStringAsFixed(1)}% ${l10n.percentOfBudget}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -243,17 +262,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _showAddBudgetDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    
     showDialog(
       context: context,
       builder: (context) => _BudgetDialog(
-        title: 'Додати бюджет',
+        title: l10n.addBudget,
+        l10n: l10n,
         onSave: (category, amount) async {
           try {
             await _dataService.addBudget(category, amount);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Бюджет додано'),
+                SnackBar(
+                  content: Text(l10n.budgetAdded),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -262,7 +284,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Помилка: $e'),
+                  content: Text('${l10n.error}: $e'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -274,12 +296,15 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _showEditBudgetDialog(String category, double currentAmount) async {
+    final l10n = AppLocalizations.of(context)!;
+    
     showDialog(
       context: context,
       builder: (context) => _BudgetDialog(
-        title: 'Редагувати бюджет',
+        title: l10n.editBudget,
         initialCategory: category,
         initialAmount: currentAmount,
+        l10n: l10n,
         onSave: (newCategory, amount) async {
           try {
             if (newCategory != category) {
@@ -288,8 +313,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             await _dataService.addBudget(newCategory, amount);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Бюджет оновлено'),
+                SnackBar(
+                  content: Text(l10n.budgetUpdated),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -298,7 +323,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Помилка: $e'),
+                  content: Text('${l10n.error}: $e'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -310,15 +335,18 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _deleteBudget(String category) async {
+    final l10n = AppLocalizations.of(context)!;
+    final localizedCategoryName = Categories.getLocalizedCategoryName(category, l10n);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Видалити бюджет'),
-        content: Text('Ви впевнені, що хочете видалити бюджет для категорії "$category"?'),
+        title: Text(l10n.deleteBudget),
+        content: Text('${l10n.deleteBudgetConfirm} "$localizedCategoryName"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Скасувати'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -327,8 +355,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 await _dataService.removeBudget(category);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Бюджет видалено'),
+                    SnackBar(
+                      content: Text(l10n.budgetDeleted),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -337,37 +365,33 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Помилка: $e'),
+                      content: Text('${l10n.error}: $e'),
                       backgroundColor: Colors.red,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Видалити'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
     );
   }
+}
 
-  String _getMonthName(int month) {
-    const months = [
-      'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
-      'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'
-    ];
-    return months[month - 1];
-  }
-}class _StatItem extends StatelessWidget {
+class _StatItem extends StatelessWidget {
   final String title;
   final double amount;
   final Color color;
+  final SettingsService settingsService;
 
   const _StatItem({
     Key? key,
     required this.title,
     required this.amount,
     required this.color,
+    required this.settingsService,
   }) : super(key: key);
 
   @override
@@ -383,7 +407,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          '${amount.toStringAsFixed(0)} грн',
+          settingsService.formatAmountShort(amount),
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
@@ -400,6 +424,8 @@ class _BudgetCard extends StatelessWidget {
   final double spent;
   final double limit;
   final double progress;
+  final AppLocalizations l10n;
+  final SettingsService settingsService;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -409,24 +435,42 @@ class _BudgetCard extends StatelessWidget {
     required this.spent,
     required this.limit,
     required this.progress,
+    required this.l10n,
+    required this.settingsService,
     required this.onEdit,
     required this.onDelete,
   }) : super(key: key);
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
+      case 'food':
       case 'Їжа':
+      case 'Food':
         return Icons.fastfood;
+      case 'transport':
       case 'Транспорт':
+      case 'Transport':
         return Icons.directions_car;
+      case 'entertainment':
       case 'Розваги':
+      case 'Entertainment':
         return Icons.movie;
+      case 'utilities':
       case 'Комунальні':
+      case 'Utilities':
         return Icons.home;
+      case 'shopping':
       case 'Покупки':
+      case 'Shopping':
         return Icons.shopping_bag;
+      case 'health':
       case 'Здоров\'я':
+      case 'Health':
         return Icons.local_hospital;
+      case 'education':
+      case 'Освіта':
+      case 'Education':
+        return Icons.school;
       default:
         return Icons.category;
     }
@@ -439,6 +483,8 @@ class _BudgetCard extends StatelessWidget {
         : progress >= 0.8
             ? Colors.orange
             : Colors.green;
+
+    final localizedCategoryName = Categories.getLocalizedCategoryName(category, l10n);
 
     return Card(
       child: Padding(
@@ -466,13 +512,13 @@ class _BudgetCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        category,
+                        localizedCategoryName,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                       Text(
-                        '${spent.toStringAsFixed(0)} з ${limit.toStringAsFixed(0)} грн',
+                        '${settingsService.formatAmountShort(spent)} ${AppLocalizations.of} ${settingsService.formatAmountShort(limit)}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
@@ -485,22 +531,22 @@ class _BudgetCard extends StatelessWidget {
                     PopupMenuItem(
                       value: 'edit',
                       onTap: onEdit,
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.edit_outlined),
-                          SizedBox(width: 8),
-                          Text('Редагувати'),
+                          const Icon(Icons.edit_outlined),
+                          const SizedBox(width: 8),
+                          Text(l10n.edit),
                         ],
                       ),
                     ),
                     PopupMenuItem(
                       value: 'delete',
                       onTap: onDelete,
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.delete_outline, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Видалити'),
+                          const Icon(Icons.delete_outline, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Text(l10n.delete),
                         ],
                       ),
                     ),
@@ -520,7 +566,7 @@ class _BudgetCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${(progress * 100).toStringAsFixed(1)}% використано',
+                  '${(progress * 100).toStringAsFixed(1)}% ${l10n.percentOfBudget}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
@@ -531,7 +577,7 @@ class _BudgetCard extends StatelessWidget {
                       const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        'Перевищено на ${(spent - limit).toStringAsFixed(0)} грн',
+                        '${l10n.exceededBy} ${settingsService.formatAmountShort(spent - limit)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.red,
                               fontWeight: FontWeight.w600,
@@ -541,7 +587,7 @@ class _BudgetCard extends StatelessWidget {
                   )
                 else
                   Text(
-                    'Залишилось ${(limit - spent).toStringAsFixed(0)} грн',
+                    '${l10n.remainingAmount} ${settingsService.formatAmountShort(limit - spent)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: statusColor,
                           fontWeight: FontWeight.w600,
@@ -560,6 +606,7 @@ class _BudgetDialog extends StatefulWidget {
   final String title;
   final String? initialCategory;
   final double? initialAmount;
+  final AppLocalizations l10n;
   final Future<void> Function(String category, double amount) onSave;
 
   const _BudgetDialog({
@@ -567,6 +614,7 @@ class _BudgetDialog extends StatefulWidget {
     required this.title,
     this.initialCategory,
     this.initialAmount,
+    required this.l10n,
     required this.onSave,
   }) : super(key: key);
 
@@ -577,19 +625,18 @@ class _BudgetDialog extends StatefulWidget {
 class _BudgetDialogState extends State<_BudgetDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  String _selectedCategory = 'Їжа';
+  String _selectedCategory = '';
   bool _isLoading = false;
 
-  final List<String> _categories = [
-    'Їжа', 'Транспорт', 'Розваги', 'Комунальні', 'Покупки', 'Здоров\'я', 'Освіта', 'Інше'
-  ];
+  List<String> get _categories => Categories.getLocalizedExpenseCategories(widget.l10n);
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialCategory != null) {
-      _selectedCategory = widget.initialCategory!;
-    }
+    _selectedCategory = widget.initialCategory != null 
+        ? Categories.getLocalizedCategoryName(widget.initialCategory!, widget.l10n)
+        : _categories.first;
+    
     if (widget.initialAmount != null) {
       _amountController.text = widget.initialAmount!.toStringAsFixed(0);
     }
@@ -599,6 +646,16 @@ class _BudgetDialogState extends State<_BudgetDialog> {
   void dispose() {
     _amountController.dispose();
     super.dispose();
+  }
+
+  String _getCategoryKey(String localizedName) {
+    // Знаходимо nameKey за локалізованою назвою
+    for (final category in Categories.expense) {
+      if (category.getLocalizedName(widget.l10n) == localizedName) {
+        return category.nameKey;
+      }
+    }
+    return 'other'; // fallback
   }
 
   @override
@@ -612,9 +669,9 @@ class _BudgetDialogState extends State<_BudgetDialog> {
           children: [
             DropdownButtonFormField<String>(
               value: _selectedCategory,
-              decoration: const InputDecoration(
-                labelText: 'Категорія',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: widget.l10n.category,
+                border: const OutlineInputBorder(),
               ),
               items: _categories
                   .map((category) => DropdownMenuItem(
@@ -631,19 +688,19 @@ class _BudgetDialogState extends State<_BudgetDialog> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _amountController,
-              decoration: const InputDecoration(
-                labelText: 'Сума бюджету',
-                border: OutlineInputBorder(),
-                suffixText: 'грн',
+              decoration: InputDecoration(
+                labelText: widget.l10n.budgetAmount,
+                border: const OutlineInputBorder(),
+                suffixText: SettingsService().getCurrencySymbol(),
               ),
               keyboardType: TextInputType.number,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Введіть суму бюджету';
+                  return widget.l10n.enterBudgetAmount;
                 }
                 final amount = double.tryParse(value);
                 if (amount == null || amount <= 0) {
-                  return 'Введіть коректну суму';
+                  return widget.l10n.enterCorrectAmount;
                 }
                 return null;
               },
@@ -654,7 +711,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('Скасувати'),
+          child: Text(widget.l10n.cancel),
         ),
         FilledButton(
           onPressed: _isLoading ? null : () async {
@@ -662,7 +719,8 @@ class _BudgetDialogState extends State<_BudgetDialog> {
               setState(() => _isLoading = true);
               
               try {
-                await widget.onSave(_selectedCategory, double.parse(_amountController.text));
+                final categoryKey = _getCategoryKey(_selectedCategory);
+                await widget.onSave(categoryKey, double.parse(_amountController.text));
                 if (mounted) {
                   Navigator.of(context).pop();
                 }
@@ -679,7 +737,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
                   width: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Зберегти'),
+              : Text(widget.l10n.save),
         ),
       ],
     );
