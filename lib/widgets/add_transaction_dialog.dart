@@ -1,11 +1,15 @@
 import 'package:finance_app/models/transaction.dart';
-import 'package:finance_app/services/data_service.dart';
+import 'package:finance_app/services/firebase_data.service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-
 class AddTransactionDialog extends StatefulWidget {
-  const AddTransactionDialog({Key? key}) : super(key: key);
+  final TransactionType? initialType;
+  
+  const AddTransactionDialog({
+    Key? key,
+    this.initialType,
+  }) : super(key: key);
 
   @override
   State<AddTransactionDialog> createState() => _AddTransactionDialogState();
@@ -17,9 +21,10 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   
-  TransactionType _type = TransactionType.expense;
+  late TransactionType _type;
   String _selectedCategory = 'Їжа';
   DateTime _selectedDate = DateTime.now();
+  bool _isLoading = false;
 
   final List<String> _expenseCategories = [
     'Їжа', 'Транспорт', 'Розваги', 'Комунальні', 'Покупки', 'Здоров\'я', 'Освіта', 'Інше'
@@ -28,6 +33,15 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   final List<String> _incomeCategories = [
     'Зарплата', 'Бонус', 'Інвестиції', 'Інше'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _type = widget.initialType ?? TransactionType.expense;
+    _selectedCategory = _type == TransactionType.expense
+        ? _expenseCategories.first
+        : _incomeCategories.first;
+  }
 
   @override
   void dispose() {
@@ -222,13 +236,19 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
                     child: const Text('Скасувати'),
                   ),
                   const SizedBox(width: 12),
                   FilledButton(
-                    onPressed: _saveTransaction,
-                    child: const Text('Зберегти'),
+                    onPressed: _isLoading ? null : _saveTransaction,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Зберегти'),
                   ),
                 ],
               ),
@@ -238,10 +258,15 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       ),
     );
   }
-  void _saveTransaction() {
-    if (_formKey.currentState!.validate()) {
+
+  Future<void> _saveTransaction() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
       final transaction = Transaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '', 
         title: _titleController.text,
         amount: double.parse(_amountController.text),
         category: _selectedCategory,
@@ -252,15 +277,30 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
             : _descriptionController.text,
       );
 
-      DataService().addTransaction(transaction);
-      Navigator.of(context).pop();
+      await FirebaseDataService().addTransaction(transaction);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Транзакцію "${transaction.title}" додано'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Транзакцію "${transaction.title}" додано'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Помилка збереження: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

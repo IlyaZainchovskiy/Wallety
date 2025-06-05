@@ -1,14 +1,24 @@
+import 'package:finance_app/screens/auth_wrapper.dart';
+import 'package:finance_app/screens/auth/login.dart';
+import 'package:finance_app/screens/auth/register.dart';
+import 'package:finance_app/services/firebase_data.service.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/dashboard.dart';
 import 'screens/transactions.dart';
 import 'screens/statistics.dart';
 import 'screens/budgets.dart';
 import 'screens/settings.dart';
 import 'widgets/add_transaction_dialog.dart';
-import 'services/data_service.dart';
 
-void main() {
-  DataService().generateSampleData();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(const FinMateApp());
 }
 
@@ -40,7 +50,12 @@ class FinMateApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: const HomePage(),
+      home: const AuthWrapper(),
+      routes: {
+        '/home': (context) => const HomePage(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+      },
     );
   }
 }
@@ -65,12 +80,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    DataService().addListener(_onDataChanged);
+    FirebaseDataService().addListener(_onDataChanged);
   }
 
   @override
   void dispose() {
-    DataService().removeListener(_onDataChanged);
+    FirebaseDataService().removeListener(_onDataChanged);
     super.dispose();
   }
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "175071606634",
+    "project_id": "finmate-bc9a4",
+    "storage_bucket": "finmate-bc9a4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175071606634:android:cf785415583dc52490d713",
+        "android_client_info": {
+          "package_name": "com.company.FinMAte"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjlyepZ1birckiAd05DqBOtglL_FE1z-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,6 @@
 import 'package:finance_app/models/transaction.dart';
-import 'package:finance_app/services/data_service.dart';
+import 'package:finance_app/services/firebase_data.service.dart';
 import 'package:flutter/material.dart';
-
 
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({Key? key}) : super(key: key);
@@ -11,16 +10,7 @@ class BudgetsScreen extends StatefulWidget {
 }
 
 class _BudgetsScreenState extends State<BudgetsScreen> {
-  final DataService _dataService = DataService();
-
-  final Map<String, double> _budgets = {
-    'Їжа': 3000,
-    'Транспорт': 800,
-    'Розваги': 1200,
-    'Комунальні': 1500,
-    'Покупки': 2000,
-    'Здоров\'я': 1000,
-  };
+  final FirebaseDataService _dataService = FirebaseDataService();
 
   @override
   void initState() {
@@ -57,9 +47,16 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final budgets = _dataService.budgets;
     final currentExpenses = _getCurrentMonthExpenses();
     final now = DateTime.now();
     final monthName = _getMonthName(now.month);
+
+    if (_dataService.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -112,27 +109,29 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             
             const SizedBox(height: 16),
             
-            _buildOverallStats(currentExpenses),
-            
-            const SizedBox(height: 16),
-            ...(_budgets.entries.map((entry) {
-              final category = entry.key;
-              final budgetLimit = entry.value;
-              final spent = currentExpenses[category] ?? 0;
-              final progress = spent / budgetLimit;
+            if (budgets.isNotEmpty) ...[
+              _buildOverallStats(currentExpenses, budgets),
+              const SizedBox(height: 16),
+              ...budgets.entries.map((entry) {
+                final category = entry.key;
+                final budgetLimit = entry.value;
+                final spent = currentExpenses[category] ?? 0;
+                final progress = spent / budgetLimit;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _BudgetCard(
-                  category: category,
-                  spent: spent,
-                  limit: budgetLimit,
-                  progress: progress,
-                  onEdit: () => _showEditBudgetDialog(category, budgetLimit),
-                  onDelete: () => _deleteBudget(category),
-                ),
-              );
-            }).toList()),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _BudgetCard(
+                    category: category,
+                    spent: spent,
+                    limit: budgetLimit,
+                    progress: progress,
+                    onEdit: () => _showEditBudgetDialog(category, budgetLimit),
+                    onDelete: () => _deleteBudget(category),
+                  ),
+                );
+              }).toList(),
+            ],
+            
             Card(
               child: InkWell(
                 onTap: () => _showAddBudgetDialog(),
@@ -171,8 +170,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
   }
 
-  Widget _buildOverallStats(Map<String, double> currentExpenses) {
-    final totalBudget = _budgets.values.fold(0.0, (sum, amount) => sum + amount);
+  Widget _buildOverallStats(Map<String, double> currentExpenses, Map<String, double> budgets) {
+    final totalBudget = budgets.values.fold(0.0, (sum, amount) => sum + amount);
     final totalSpent = currentExpenses.values.fold(0.0, (sum, amount) => sum + amount);
     final remaining = totalBudget - totalSpent;
     final overallProgress = totalSpent / totalBudget;
@@ -243,40 +242,74 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
   }
 
-  void _showAddBudgetDialog() {
+  Future<void> _showAddBudgetDialog() async {
     showDialog(
       context: context,
       builder: (context) => _BudgetDialog(
         title: 'Додати бюджет',
-        onSave: (category, amount) {
-          setState(() {
-            _budgets[category] = amount;
-          });
+        onSave: (category, amount) async {
+          try {
+            await _dataService.addBudget(category, amount);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Бюджет додано'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Помилка: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         },
       ),
     );
   }
 
-  void _showEditBudgetDialog(String category, double currentAmount) {
+  Future<void> _showEditBudgetDialog(String category, double currentAmount) async {
     showDialog(
       context: context,
       builder: (context) => _BudgetDialog(
         title: 'Редагувати бюджет',
         initialCategory: category,
         initialAmount: currentAmount,
-        onSave: (newCategory, amount) {
-          setState(() {
+        onSave: (newCategory, amount) async {
+          try {
             if (newCategory != category) {
-              _budgets.remove(category);
+              await _dataService.removeBudget(category);
             }
-            _budgets[newCategory] = amount;
-          });
+            await _dataService.addBudget(newCategory, amount);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Бюджет оновлено'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Помилка: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         },
       ),
     );
   }
 
-  void _deleteBudget(String category) {
+  Future<void> _deleteBudget(String category) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -288,11 +321,28 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             child: const Text('Скасувати'),
           ),
           FilledButton(
-            onPressed: () {
-              setState(() {
-                _budgets.remove(category);
-              });
+            onPressed: () async {
               Navigator.of(context).pop();
+              try {
+                await _dataService.removeBudget(category);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Бюджет видалено'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Помилка: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Видалити'),
           ),
@@ -308,9 +358,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     ];
     return months[month - 1];
   }
-}
-
-class _StatItem extends StatelessWidget {
+}class _StatItem extends StatelessWidget {
   final String title;
   final double amount;
   final Color color;
@@ -512,7 +560,7 @@ class _BudgetDialog extends StatefulWidget {
   final String title;
   final String? initialCategory;
   final double? initialAmount;
-  final Function(String category, double amount) onSave;
+  final Future<void> Function(String category, double amount) onSave;
 
   const _BudgetDialog({
     Key? key,
@@ -530,6 +578,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   String _selectedCategory = 'Їжа';
+  bool _isLoading = false;
 
   final List<String> _categories = [
     'Їжа', 'Транспорт', 'Розваги', 'Комунальні', 'Покупки', 'Здоров\'я', 'Освіта', 'Інше'
@@ -604,17 +653,33 @@ class _BudgetDialogState extends State<_BudgetDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('Скасувати'),
         ),
         FilledButton(
-          onPressed: () {
+          onPressed: _isLoading ? null : () async {
             if (_formKey.currentState!.validate()) {
-              widget.onSave(_selectedCategory, double.parse(_amountController.text));
-              Navigator.of(context).pop();
+              setState(() => _isLoading = true);
+              
+              try {
+                await widget.onSave(_selectedCategory, double.parse(_amountController.text));
+                if (mounted) {
+                  Navigator.of(context).pop();
+                }
+              } finally {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                }
+              }
             }
           },
-          child: const Text('Зберегти'),
+          child: _isLoading
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Зберегти'),
         ),
       ],
     );

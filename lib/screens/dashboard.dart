@@ -1,7 +1,7 @@
 import 'package:finance_app/models/transaction.dart';
-import 'package:finance_app/services/data_service.dart';
+import 'package:finance_app/services/firebase_data.service.dart';
+import 'package:finance_app/widgets/add_transaction_dialog.dart';
 import 'package:flutter/material.dart';
-
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -11,7 +11,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final DataService _dataService = DataService();
+  final FirebaseDataService _dataService = FirebaseDataService();
 
   @override
   void initState() {
@@ -45,15 +45,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () {
+              _showBudgetNotifications();
+            },
           ),
         ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            await Future.delayed(const Duration(milliseconds: 500));
-            setState(() {});
+            await _dataService.initializeUserData();
           },
           child: ListView(
             padding: const EdgeInsets.all(16),
@@ -90,6 +91,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showBudgetNotifications() {
+    final budgets = _dataService.budgets;
+    final currentMonth = DateTime.now();
+    final currentExpenses = _dataService.getExpensesByCategory();
+    
+    final monthlyExpenses = <String, double>{};
+    for (var transaction in _dataService.transactions) {
+      if (transaction.type == TransactionType.expense &&
+          transaction.date.year == currentMonth.year &&
+          transaction.date.month == currentMonth.month) {
+        monthlyExpenses[transaction.category] =
+            (monthlyExpenses[transaction.category] ?? 0) + transaction.amount;
+      }
+    }
+
+    final exceededBudgets = <String>[];
+    final warningBudgets = <String>[];
+
+    for (var entry in budgets.entries) {
+      final spent = monthlyExpenses[entry.key] ?? 0;
+      final limit = entry.value;
+      final percentage = spent / limit;
+
+      if (percentage >= 1.0) {
+        exceededBudgets.add(entry.key);
+      } else if (percentage >= 0.8) {
+        warningBudgets.add(entry.key);
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.notifications_active, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Сповіщення бюджету'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (exceededBudgets.isNotEmpty) ...[
+              const Text(
+                '⚠️ Перевищені бюджети:',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+              ),
+              ...exceededBudgets.map((category) => Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Text('• $category'),
+                  )),
+              const SizedBox(height: 12),
+            ],
+            if (warningBudgets.isNotEmpty) ...[
+              const Text(
+                '⚠️ Попередження (>80%):',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+              ),
+              ...warningBudgets.map((category) => Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Text('• $category'),
+                  )),
+              const SizedBox(height: 12),
+            ],
+            if (exceededBudgets.isEmpty && warningBudgets.isEmpty)
+              const Text(
+                '✅ Всі бюджети в межах норми!',
+                style: TextStyle(color: Colors.green),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
@@ -209,7 +293,7 @@ class _MonthlyCard extends StatelessWidget {
 class _RecentTransactionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final transactions = DataService().transactions
+    final transactions = FirebaseDataService().transactions
         .take(5)
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
@@ -231,7 +315,13 @@ class _RecentTransactionsCard extends StatelessWidget {
                 const Spacer(),
                 TextButton(
                   onPressed: () {
-                    // TODO: Перейти до списку всіх транзакцій
+                    final mainContext = Navigator.of(context);
+                    final homeState = mainContext.widget is MaterialApp 
+                        ? null 
+                        : mainContext.context.findAncestorStateOfType<_HomePageState>();
+                    homeState?.setState(() {
+                      homeState._index = 1; 
+                    });
                   },
                   child: const Text('Показати всі'),
                 ),
@@ -331,7 +421,12 @@ class _QuickActionsCard extends StatelessWidget {
                     label: 'Додати дохід',
                     color: Colors.green,
                     onTap: () {
-                      // TODO: Відкрити діалог з типом доходу
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AddTransactionDialog(
+                          initialType: TransactionType.income,
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -342,7 +437,12 @@ class _QuickActionsCard extends StatelessWidget {
                     label: 'Додати витрату',
                     color: Colors.red,
                     onTap: () {
-                      // TODO: Відкрити діалог з типом витрати
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AddTransactionDialog(
+                          initialType: TransactionType.expense,
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -357,7 +457,7 @@ class _QuickActionsCard extends StatelessWidget {
                     label: 'Статистика',
                     color: Colors.blue,
                     onTap: () {
-                      // TODO: Перейти до розділу статистики
+                      _navigateToTab(context, 2);
                     },
                   ),
                 ),
@@ -368,7 +468,7 @@ class _QuickActionsCard extends StatelessWidget {
                     label: 'Бюджети',
                     color: Colors.orange,
                     onTap: () {
-                      // TODO: Перейти до розділу бюджетів
+                      _navigateToTab(context, 3);
                     },
                   ),
                 ),
@@ -378,6 +478,13 @@ class _QuickActionsCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _navigateToTab(BuildContext context, int tabIndex) {
+    final scaffoldContext = Scaffold.of(context).context;
+    final homePageState = scaffoldContext.findAncestorStateOfType<_HomePageState>();
+    homePageState?._index = tabIndex;
+    homePageState?.setState(() {});
   }
 }
 
