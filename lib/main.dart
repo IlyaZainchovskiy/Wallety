@@ -2,6 +2,7 @@ import 'package:finance_app/screens/auth_wrapper.dart';
 import 'package:finance_app/screens/auth/login.dart';
 import 'package:finance_app/screens/auth/register.dart';
 import 'package:finance_app/services/firebase_data.service.dart';
+import 'package:finance_app/services/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -69,23 +70,19 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _index = 0;
-  final _screens = const [
-    DashboardScreen(),
-    TransactionsScreen(),
-    StatisticsScreen(),
-    BudgetsScreen(),
-    SettingsScreen(),
-  ];
+  final NavigationService _navigationService = NavigationService();
 
   @override
   void initState() {
     super.initState();
     FirebaseDataService().addListener(_onDataChanged);
+    _navigationService.setNavigationCallback(navigateToTab);
   }
 
   @override
   void dispose() {
     FirebaseDataService().removeListener(_onDataChanged);
+    _navigationService.clearNavigationCallback();
     super.dispose();
   }
 
@@ -94,6 +91,20 @@ class _HomePageState extends State<HomePage> {
       setState(() {});
     }
   }
+
+  void navigateToTab(int tabIndex) {
+    setState(() {
+      _index = tabIndex;
+    });
+  }
+
+  List<Widget> get _screens => [
+    const DashboardScreen(),
+    const TransactionsScreen(),
+    const StatisticsScreen(),
+    const BudgetsScreen(),
+    const SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {

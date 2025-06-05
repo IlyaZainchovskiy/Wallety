@@ -1,5 +1,6 @@
 import 'package:finance_app/models/transaction.dart';
 import 'package:finance_app/services/firebase_data.service.dart';
+import 'package:finance_app/services/navigation_service.dart';
 import 'package:finance_app/widgets/add_transaction_dialog.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final FirebaseDataService _dataService = FirebaseDataService();
+  final NavigationService _navigationService = NavigationService();
 
   @override
   void initState() {
@@ -29,6 +31,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _navigateToTab(int tabIndex) {
+    _navigationService.navigateToTab(tabIndex);
   }
 
   @override
@@ -98,7 +104,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _showBudgetNotifications() {
     final budgets = _dataService.budgets;
     final currentMonth = DateTime.now();
-    final currentExpenses = _dataService.getExpensesByCategory();
     
     final monthlyExpenses = <String, double>{};
     for (var transaction in _dataService.transactions) {
@@ -291,6 +296,8 @@ class _MonthlyCard extends StatelessWidget {
 }
 
 class _RecentTransactionsCard extends StatelessWidget {
+  const _RecentTransactionsCard({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     final transactions = FirebaseDataService().transactions
@@ -314,15 +321,7 @@ class _RecentTransactionsCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 TextButton(
-                  onPressed: () {
-                    final mainContext = Navigator.of(context);
-                    final homeState = mainContext.widget is MaterialApp 
-                        ? null 
-                        : mainContext.context.findAncestorStateOfType<_HomePageState>();
-                    homeState?.setState(() {
-                      homeState._index = 1; 
-                    });
-                  },
+                  onPressed: () => NavigationService().navigateToTab(1),
                   child: const Text('Показати всі'),
                 ),
               ],
@@ -398,6 +397,8 @@ class _RecentTransactionsCard extends StatelessWidget {
 }
 
 class _QuickActionsCard extends StatelessWidget {
+  const _QuickActionsCard({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -456,9 +457,7 @@ class _QuickActionsCard extends StatelessWidget {
                     icon: Icons.pie_chart_outline,
                     label: 'Статистика',
                     color: Colors.blue,
-                    onTap: () {
-                      _navigateToTab(context, 2);
-                    },
+                    onTap: () => NavigationService().navigateToTab(2),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -467,9 +466,7 @@ class _QuickActionsCard extends StatelessWidget {
                     icon: Icons.account_balance_wallet_outlined,
                     label: 'Бюджети',
                     color: Colors.orange,
-                    onTap: () {
-                      _navigateToTab(context, 3);
-                    },
+                    onTap: () => NavigationService().navigateToTab(3),
                   ),
                 ),
               ],
@@ -478,13 +475,6 @@ class _QuickActionsCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _navigateToTab(BuildContext context, int tabIndex) {
-    final scaffoldContext = Scaffold.of(context).context;
-    final homePageState = scaffoldContext.findAncestorStateOfType<_HomePageState>();
-    homePageState?._index = tabIndex;
-    homePageState?.setState(() {});
   }
 }
 

@@ -1,6 +1,6 @@
 // lib/screens/statistics.dart
 import 'package:finance_app/models/transaction.dart';
-import 'package:finance_app/services/data_service.dart';
+import 'package:finance_app/services/firebase_data.service.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
@@ -13,7 +13,7 @@ class StatisticsScreen extends StatefulWidget {
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
-  final DataService _dataService = DataService();
+  final FirebaseDataService _dataService = FirebaseDataService();
   String _selectedPeriod = 'month'; 
 
   @override
@@ -446,6 +446,6 @@ class PieChartPainter extends CustomPainter {
     );
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
+    @override
+    bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  }
