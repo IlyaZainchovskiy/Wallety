@@ -217,7 +217,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                       itemCount: transactions.length,
                       itemBuilder: (context, index) {
                         final transaction = transactions[index];
@@ -357,7 +357,6 @@ class _TransactionCard extends StatelessWidget {
   }) : super(key: key);
 
   IconData _getCategoryIcon(String category) {
-    // Цей метод залишається таким самим, оскільки іконки не потребують локалізації
     switch (category) {
       case 'Їжа':
       case 'Food':
@@ -401,80 +400,108 @@ class _TransactionCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            _getCategoryIcon(transaction.category),
-            color: color,
-            size: 24,
-          ),
-        ),
-        title: Text(
-          transaction.title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
           children: [
-            Text(transaction.category),
-            Text(
-              '${transaction.date.day.toString().padLeft(2, '0')}.${transaction.date.month.toString().padLeft(2, '0')}.${transaction.date.year}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
+            // Leading icon
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _getCategoryIcon(transaction.category),
+                color: color,
+                size: 24,
+              ),
             ),
-            if (transaction.description != null)
-              Text(
-                transaction.description!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            const SizedBox(width: 12),
+            
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    transaction.title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    transaction.category,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${transaction.date.day.toString().padLeft(2, '0')}.${transaction.date.month.toString().padLeft(2, '0')}.${transaction.date.year}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                  ),
+                  if (transaction.description != null && transaction.description!.isNotEmpty)
+                    Text(
+                      transaction.description!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                ],
               ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${isIncome ? '+' : '-'}${settingsService.formatAmountShort(transaction.amount)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
             ),
-            PopupMenuButton(
-              icon: const Icon(Icons.more_vert, size: 20),
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'edit',
-                  onTap: onEdit,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.edit_outlined),
-                      const SizedBox(width: 8),
-                      Text(l10n.edit),
-                    ],
-                  ),
+            
+            const SizedBox(width: 8),
+            
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${isIncome ? '+' : '-'}${settingsService.formatAmountShort(transaction.amount)}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                PopupMenuItem(
-                  value: 'delete',
-                  onTap: onDelete,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.delete_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Text(l10n.delete),
-                    ],
-                  ),
+                PopupMenuButton(
+                  icon: const Icon(Icons.more_vert, size: 18),
+                  padding: EdgeInsets.zero,
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      onTap: onEdit,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.edit),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      onTap: onDelete,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.delete),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

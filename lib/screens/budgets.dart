@@ -518,7 +518,7 @@ class _BudgetCard extends StatelessWidget {
                             ),
                       ),
                       Text(
-                        '${settingsService.formatAmountShort(spent)} ${AppLocalizations.of} ${settingsService.formatAmountShort(limit)}',
+                        '${settingsService.formatAmountShort(spent)} ${l10n.ofPreposition} ${settingsService.formatAmountShort(limit)}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),

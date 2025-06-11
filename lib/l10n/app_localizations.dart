@@ -209,6 +209,7 @@ class AppLocalizations {
   String get budgetDeleted => _isUkrainian ? 'Бюджет видалено' : 'Budget deleted';
   String get exceededBy => _isUkrainian ? 'Перевищено на' : 'Exceeded by';
   String get remainingAmount => _isUkrainian ? 'Залишилось' : 'Remaining';
+  String get ofPreposition => _isUkrainian ? 'з' : 'of';
 
   // Statistics screen
   String get expensesByCategory => _isUkrainian ? 'Витрати по категоріях' : 'Expenses by Category';
